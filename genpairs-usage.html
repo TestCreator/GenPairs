@@ -1,0 +1,173 @@
+<html>
+<head>
+  <title>Using gencp.py</title>
+</head>
+<body>
+<h1>Using genpairs.py</h1>
+<h2>Overview</h2>
+<p><code>genpairs.py</code> is a simple combinatorial test vector
+  generator written in Python.   It is not as full-featured or
+  efficient as commercial systems like AETG, but it is free and
+  requires only a Python interpreter to run. </p>
+<p><code>genpairs.py</code> accepts input specifications in a format based
+  loosely on category partition test specifications as originally
+  described by Ostrand and Balcer, and as presented in Pezz&egrave;
+  &amp; Young, chapter 11.  Details of the syntax are described
+  below.  <code>genpairs.py</code> uses a heuristic method similar to
+  that of other tools, including AETG.  It produces <emph>test
+  vectors</emph>, that is, sets of choices that together specify one
+  or test cases.  As the program name
+  implies, <code>genpairs.cp</code> creates test vectors that cover
+  all pairwise value combinations.  The basic pairwise coverage can be
+  modified by a variety of constraints inspired by the category
+  partition test suite specification method. 
+  The test vector output is in a tabular form that can
+  then be processed further for producing actual test cases. 
+</p>
+
+<h2>Usage</h2>
+<h3>Invoking genpairs.py</h3>
+<p><code>genpairs.py</code> is a Python program that reads its input from
+  the standard input, so the most basic invocation from the command
+  line will look something like this (depending on your operating
+  system):<br />
+  <code>
+    % python genpairs.py < specfile.cp
+  </code>
+</p>
+<h3>Options</h3>
+<p><code>genpairs.py</code> accepts several command-line options.  The
+  examples here are for Unix systems, including Linux and MacOS
+  X. 
+</p>
+<ul>
+  <li><code>-h</code> or <code>--help</code> : 
+  Print a short synopsis of options and quit.
+  </li>
+  <li><code>-d</code> or <code>--debug</code> : 
+  Print a lot of debugging messages (useful mainly for debugging 
+  <code>genpairs.py</code> itself, not for using it). 
+  </li>
+  <li><code>-l</code> or <code>--license</code> : 
+  Print the (open-source) license terms and quit. 
+  </li>
+  <li><code>-c</code> or <code>--csv</code>
+  or <code>--comma-separated-values</code> : 
+  Print output in comma-separated-values format, suitable for
+  importing into an Excel spreadsheet and some other programs that 
+  accept CSV format.</li>
+  <li><code>-v</code> or <code>--varying</code>
+  or <code>--varying-columns-only</code> : 
+  Print only the columns that vary within the test suite.  If there 
+  is only one valid choice that is not marked "error" or "single", 
+  that column will be omitted.  (Useful for viewing the combinations
+  manually while developing a test specification.) 
+  </li>
+  <li><code>-o</code> or <code>--omit-singles</code> : 
+  Do not print combinations with "error" or "single" elements. 
+  </li>
+  <li><code>-s</code> or <code>--singles-only</code> : 
+  Print only combinations with "error" or "single" elements. 
+  </li>
+  <li><code>-i INITIAL_SUITE</code>
+ or <code>--initial=INITIAL_SUITE</code>
+ or <code>--initial-suite=INITIAL_SUITE</code> : 
+                        Read initial test suite (in csv format).  Often
+                        used together with -p.
+</li>
+<li><code>-p</code> or <code>--pairs</code> <code>--print-pairs</code>
+                        : 
+                        Report pairs not covered by initial test suites.
+                        (Useful only with --initial)
+</li>
+</ul>
+
+<h2>Input syntax overview</h2>
+<p>Input to <code>genpairs.py</code> consists of a sequence
+  of <emph>categories</emph>, each containing one or
+  more <emph>choices</emph>.  Each choice may optionally be marked
+  with one or more <emph>properties</emph>, one or more 
+  <emph>property qualifiers</emph> ("ifs"), and zero or one 
+  <emph>error</emph> or <emph>single</emph> qualifier.</p>
+
+<p>Each line of input may include a comment
+  following <code>//</code>.  Except for this, white space (including
+  line breaks) is not significant. </p>
+<p>"if", "prop", "except", "single", and "error" are reserved words
+  with special meanings.  Category names and value names can be any
+  other strings of non-blank characters, including punctuation
+  symbols. A string ending in ":" is taken as a category name, and
+  other strings are taken as names of choices.</p>
+<p><emph>Good practice:</emph> Although the rules for identifiers 
+  in the current version of <code>genpairs.py</code> is
+  very permissive (e.g., ".38#dk2*&amp;:" could be a legal category
+  name), future versions may be stricter.  It is a good idea to use
+  the following conventions: 
+  </p>
+  <ul>
+    <li>Category names should follow the same conventions as
+    identifiers in programming languages like Java and C, 
+      except for the terminating ":".</li>
+    <li>Choice names should look like identifiers or like 
+      constant literals (e.g., integers or floating point numbers), 
+      even though <code>genpairs.py</code> treats them like strings.
+      (Note however that blanks are <emph>not</emph> permitted in choice 
+      names, even within quotes.)
+    </li>
+  </ul>
+
+
+<h2>Example</h2>
+
+<p>Here is a very simple input specification
+  for <code>genpairs.py</code>:</p>
+<pre>
+// col0, col1, and col2 are categories. 
+col0: 
+   e0 error  // e0 is an error entry.  
+   e1 error  // So is e1.  They will each appear only once in output. 
+   v0.0 prop v0  // v0.0 satisfies property v0
+   v0.1 prop v1
+
+col1:
+   s0 single
+   s1 single
+   v1.0 if v0  // v1.0 must be paired with v0.0 (property v0)
+   v1.1 if v1 //  v1.1 must be paired with v0.1 (property v1)
+
+col2: 
+   v2.0 if v0 if v1  // v2.0 requires properties v0 AND v1 (impossible)
+   v2.1
+</pre>
+
+<p>Note that this specification is inconsistent.  It says that, for
+  category col2, choice v2.0 requires properties v0 and v1.  However,
+  properties v0 and v1 cannot both be true, because property v0
+  requires col0=v0.0, but property v1 requires col0=v0.1.  Here is 
+  what we see when we run gencp.py on this input: 
+</p>
+<pre>
+python genpairs.py &lt;tests/smoke-tests/small-spec-exclude-3.cp 
+Warning - No pair possible:  [ col1=v1.1 col2=v2.0 ]
+Warning - No pair possible:  [ col1=v1.0 col2=v2.0 ]
+Pairwise coverage: 2  test vectors
+
+           col0            col1            col2 
+____________________________________________________________
+           v0.1            v1.1            v2.1 
+           v0.0            v1.0            v2.1 
+
+Single and error vectors: 4  test vectors
+
+           col0            col1            col2 
+____________________________________________________________
+             e0            v1.1            v2.0 
+             e1            v1.1            v2.0 
+           v0.0              s0            v2.1 
+           v0.0              s1            v2.1 
+</pre>
+<p>The first two test vectors are the normal (non-error, non-single)
+  test cases.  The second set of test vectors are error and single
+  cases. 
+</body>
+</html>
