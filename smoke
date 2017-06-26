@@ -1,0 +1,16 @@
+#! /bin/bash
+#
+# Very simple smoke test on Python2 and Python3 execution
+# of genpairs.cp
+#
+
+rm -f py2out.txt py3out.txt
+echo "==========================================="
+echo "Python 2 shakedown:"
+python genpairs.py <examples/inconsistent.cp | tee py2out.txt
+echo "==========================================="
+echo "Python 3 shakedown: "
+python3 genpairs.py <examples/inconsistent.cp | tee py3out.txt
+echo "==========================================="
+echo "Differences:"
+diff py2out.txt py3out.txt
