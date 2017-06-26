@@ -1,8 +1,8 @@
-# $Id: genpairs.py,v 1.27 2008/03/10 12:41:04 michal Exp $ 
 #  Generate an all-pairs covering test suite
 #
 # (c) 2007 University of Oregon and Michal Young
 # All rights reserved.  
+#
 License = """
 (c) 2007 University of Oregon and Michal Young. All rights reserved.
 
@@ -90,6 +90,22 @@ DontCare = "_"
 DBG = False ## Debugging mode, on (true) or off (false)
 DBGp = False ## Performance debugging, December 2006
 maxCandidates = 50 ## Bigger = better solutions, smaller = faster 
+
+## Platform compatibility 
+# ----------------------------------------
+import six # Python 2 and 3 compatibility
+from six import print_    
+
+# Debug messages
+def dbg(*msg):
+    if DBG:
+        print_(*msg)  ## Python 2 and 3 compatible print
+
+# Performance debug messages
+def dbg_p(*msg): 
+    if DBGp: 
+        print_(*msg)  ## Python 2 and 3 compatible print
+# ------------------------------------    
 
 ## User arguments
 from optparse import OptionParser 
@@ -192,17 +208,17 @@ def tokenClass( tok ) :
 # 
 def getToken() : 
     while 1:
-	s = sys.stdin.readline()
-	if not s: 
-	    if DBG:  print "#DBG <<EOF reached>>"
-	    yield EOF
-	    return
-	commentPos = s.find("//");
-	if commentPos >= 0 : 
-	    s = s[0:commentPos]
+        s = sys.stdin.readline()
+        if not s: 
+            dbg("#DBG <<EOF reached>>")
+            yield EOF
+            return
+        commentPos = s.find("//");
+        if commentPos >= 0 : 
+            s = s[0:commentPos]
         for word in s.split() : 
-	    if DBG:  print "#DBG <<%s: %s>>" % ( word, tokenClass(word)  ) 
-	    yield word
+               dbg("#DBG <<%s: %s>>" % ( word, tokenClass(word)  ) )
+               yield word
 
 Token = "UNINITIALIZED"
 tokenStream = getToken()
@@ -210,109 +226,109 @@ tokenStream = getToken()
 def parse(): 
     global Token
     global NCol 
-    Token = tokenStream.next()
+    Token = six.next(tokenStream)
     parseSpec()
     NCol = len(CategoriesList) 
 
 def parseSpec(): 
     global Token
-    if DBG:  print "#DBG (parseSpec)"
+    dbg("#DBG (parseSpec)")
     if Token == EOF : return [ ]
     if tokenClass( Token ) != CategoryToken : 
-	print "Syntax error on ", Token, " looking for 'category:'"
-	print "Skipping to next category"
-	## Error recovery to next category
-	while tokenClass( Token ) != CategoryToken : 
-	    if tokenClass( Token ) == EOF : 
-		print "Discarding rest of file"
-		return [ ] 
-	    Token = tokenStream.next()
-	print "Resuming from" , Token
+        print_("Syntax error on ", Token, " looking for 'category:'")
+        print_("Skipping to next category")
+        ## Error recovery to next category
+        while tokenClass( Token ) != CategoryToken : 
+            if tokenClass( Token ) == EOF : 
+                print_("Discarding rest of file")
+                return [ ] 
+            Token = tokenStream.next()
+        print_("Resuming from" , Token)
     category = Token[0:-1]
-    Token = tokenStream.next()
+    Token = six.next(tokenStream)
     values = parseValues()
-    if DBG: print "#DBG Parsed: ", category, " ::= ", values
+    dbg("#DBG Parsed: ", category, " ::= ", values)
     slotNum = len(CategoriesList)
     CategoriesList.append( category ) 
     vlist = [ ] 
     CategoriesValues.append(vlist)
     CategoriesProps[ category ] = [ ] 
     for valDesc in values : 
-	val = valDesc[0] ## The name of the value itself
-	## Postpone marking val as a possible value of the property
-	## until we know whether it is a singleton 
-	singleton = False
-	ValueProps[ (slotNum, val) ] = [] ## List of its properties
-	for cond in valDesc[1:] : 
-	    kind = nameOf(cond)
-	    condVal = valOf(cond)
-	    if kind == "prop" : 
-		CategoriesProps[ category ].append(condVal)
-		ValueProps[ (slotNum, val ) ].append(condVal)
-		if condVal not in PropsSlots : 
-		    PropsSlots[condVal] = set()
-		PropsSlots[condVal].add(slotNum) 
-	    elif kind == "if" : 
-		ValueIfs.append( (val, slotNum, condVal ) ) 
-	    elif kind == "except" : 
-		ValueExcepts.append( (val, slotNum, condVal) ) 
-	    elif kind == "error" or kind == "single" : 
-		Singles.append( (val, slotNum, kind) ) 
-		singleton = True
-	    else : 
-		print "*ERR* Unrecognized condition attribute:", cond
-	if not singleton:  vlist.append( val )
+        val = valDesc[0] ## The name of the value itself
+        ## Postpone marking val as a possible value of the property
+        ## until we know whether it is a singleton 
+        singleton = False
+        ValueProps[ (slotNum, val) ] = [] ## List of its properties
+        for cond in valDesc[1:] : 
+            kind = nameOf(cond)
+            condVal = valOf(cond)
+            if kind == "prop" : 
+                CategoriesProps[ category ].append(condVal)
+                ValueProps[ (slotNum, val ) ].append(condVal)
+                if condVal not in PropsSlots : 
+                    PropsSlots[condVal] = set()
+                PropsSlots[condVal].add(slotNum) 
+            elif kind == "if" : 
+                ValueIfs.append( (val, slotNum, condVal ) ) 
+            elif kind == "except" : 
+                ValueExcepts.append( (val, slotNum, condVal) ) 
+            elif kind == "error" or kind == "single" : 
+                Singles.append( (val, slotNum, kind) ) 
+                singleton = True
+            else : 
+                print_("*ERR* Unrecognized condition attribute:", cond)
+        if not singleton:  vlist.append( val )
 
     parseSpec()
 
 
 def parseValues(): 
     global Token
-    if DBG:  print "#DBG (parseValues)"
+    dbg("#DBG (parseValues)")
     values = [ ] 
     while tokenClass( Token ) == ValueToken : 
-	val = parseValue()
-	if DBG: print "#DBG (parsed value: ", val, ")"
-	values.append( val )
+        val = parseValue()
+        dbg("#DBG (parsed value: ", val, ")")
+        values.append( val )
     return values
 
 def parseValue(): 
     global Token
-    if DBG:  print "#DBG (parseValue, looking at ", Token, ")"
+    dbg("#DBG (parseValue, looking at ", Token, ")")
     if tokenClass( Token ) != ValueToken : 
-	print "Syntax error, expecting value, saw ", Token 
-	return [ "--bogus--"] 
+        print_("Syntax error, expecting value, saw ", Token )
+        return [ "--bogus--"] 
     value = [ Token ]
-    Token = tokenStream.next()
+    Token = six.next(tokenStream)
     conditions = parseConditions()
-    if DBG:  print "#DBG parseValue returns", value + conditions
+    dbg("#DBG parseValue returns", value + conditions)
     return value + conditions 
 
 def parseConditions(): 
     global Token 
-    if DBG:  print "#DBG (parseConditions)"
+    dbg("#DBG (parseConditions)")
     if tokenClass( Token ) == ErrorToken : 
-	Token = tokenStream.next()
-	return [("error", None )] + parseConditions()
+        Token = six.next(tokenStream)
+        return [("error", None )] + parseConditions()
     if tokenClass( Token ) == SingleToken : 
-	Token = tokenStream.next()
-	return [("single", None)] + parseConditions()
+        Token = six.next(tokenStream)
+        return [("single", None)] + parseConditions()
     if tokenClass( Token ) == IfToken : 
-	Token = tokenStream.next() 
-	ifcond = Token
-	Token = tokenStream.next()
-	return [("if" , ifcond)] + parseConditions()
+        Token = six.next(tokenStream) 
+        ifcond = Token
+        Token = six.next(tokenStream)
+        return [("if" , ifcond)] + parseConditions()
     if tokenClass( Token ) == PropToken : 
-	Token = tokenStream.next() 
-	condname = Token
-	Token = tokenStream.next()
-	return [("prop" , condname)] + parseConditions()
+        Token = six.next(tokenStream) 
+        condname = Token
+        Token = six.next(tokenStream)
+        return [("prop" , condname)] + parseConditions()
     if tokenClass( Token ) == ExceptToken : 
-	Token = tokenStream.next() 
-	condname = Token
-	Token = tokenStream.next()
-	return [("except" , condname)] + parseConditions()
-    if DBG:  print "#DBG No more conditions"
+        Token = six.next(tokenStream) 
+        condname = Token
+        Token = six.next(tokenStream)
+        return [("except" , condname)] + parseConditions()
+    dbg("#DBG No more conditions")
     return [ ]
 
 
@@ -348,14 +364,14 @@ def valOf( tuple ):
 # 
 def identifySingles() : 
     for slot in range(len(CategoriesList)) : 
-	if len(CategoriesValues[slot]) == 0 : 
-	    print "Warning: No non-singular value choices for ", 
-	    print CategoriesList[slot]
-	    print "Pairs generation will fail."
-	elif len(CategoriesValues[slot]) == 1 : 
-	    SingleColumns.append(slot)
-	else: 
-	    MultipleColumns.append(slot)
+        if len(CategoriesValues[slot]) == 0 : 
+            print_("Warning: No non-singular value choices for ",
+                       CategoriesList[slot], 
+                       "; Pairs generation will fail.")
+        elif len(CategoriesValues[slot]) == 1 : 
+            SingleColumns.append(slot)
+        else: 
+            MultipleColumns.append(slot)
     
 
 # Obligations depend on excludes, so call makeExcludes before 
@@ -364,45 +380,44 @@ def identifySingles() :
 def makeExcludes() : 
     # Excludes that come from "except" clauses
     for ExceptCond in ValueExcepts : 
-	val, slot, cond = ExceptCond
-	for conflict_slot in PropsSlots[ cond ] : 
-	    for cs_value in CategoriesValues[ conflict_slot ] : 
-		if cond in ValueProps[ (conflict_slot, cs_value) ] : 
-		    Excludes.add( makePair( slot, val, conflict_slot, cs_value))
+        val, slot, cond = ExceptCond
+        for conflict_slot in PropsSlots[ cond ] : 
+            for cs_value in CategoriesValues[ conflict_slot ] : 
+                if cond in ValueProps[ (conflict_slot, cs_value) ] : 
+                    Excludes.add( makePair( slot, val, conflict_slot, cs_value))
     # Excludes that come from "if" clauses --- reverse sense 
     for IfCond in ValueIfs : 
-	val, slot, cond = IfCond
-	for conflict_slot in PropsSlots[ cond ] : 
-	    for cs_value in CategoriesValues[ conflict_slot ] : 
-		if cond not in ValueProps[ (conflict_slot, cs_value) ] : 
-		    Excludes.add( makePair( slot, val, conflict_slot, cs_value))
+        val, slot, cond = IfCond
+        for conflict_slot in PropsSlots[ cond ] : 
+            for cs_value in CategoriesValues[ conflict_slot ] : 
+                if cond not in ValueProps[ (conflict_slot, cs_value) ] : 
+                    Excludes.add( makePair( slot, val, conflict_slot, cs_value))
 
 
 def makeObligations() : 
    if DBG:
-       print "--- Creating obligations list ---"
+       print_("--- Creating obligations list ---")
    keys = CategoriesList
    nslots = len(keys)
    for i in range(nslots): 
        ObsByCol[i] = []
    for i in MultipleColumns : 
        for v1 in CategoriesValues[i] : 
-	   i_item = (i, v1)
-	   for j in range(i+1,nslots) : 
-	       ## if j in SingleColumns: continue ## 
-	       ##  --- short cut doesn't work if only one varying column -- 
-	       for v2 in CategoriesValues[j] : 
-		   j_item = (j, v2)
-		   obforward = (i_item, j_item)
-		   obbackward = (j_item, i_item)
-		   if obforward not in Excludes and obbackward not in Excludes: 
-		       ObsList.append(obforward)
-		       Outstanding.add(obforward)
-		       ObsByCol[ i ].append(obforward)
-		       ObsByCol[ j ].append(obbackward)
+           i_item = (i, v1)
+           for j in range(i+1,nslots) : 
+               ## if j in SingleColumns: continue ## 
+               ##  --- short cut doesn't work if only one varying column -- 
+               for v2 in CategoriesValues[j] : 
+                   j_item = (j, v2)
+                   obforward = (i_item, j_item)
+                   obbackward = (j_item, i_item)
+                   if obforward not in Excludes and obbackward not in Excludes: 
+                       ObsList.append(obforward)
+                       Outstanding.add(obforward)
+                       ObsByCol[ i ].append(obforward)
+                       ObsByCol[ j ].append(obbackward)
    random.shuffle(ObsList)
-   if DBG:
-       print "--- ObsList complete, ", len(ObsList), " obligations  ---"
+   dbg("--- ObsList complete, ", len(ObsList), " obligations  ---")
 
 #  When we complete a test case, we remove obligations from
 #  the outstanding obligations list.  The other lists are 
@@ -411,12 +426,12 @@ def makeObligations() :
 def clearObligations(testcase) : 
     testCaseValue = 0
     for i in range( len(testcase) ): 
-	for j in range ( i+1, len(testcase) ): 
-	    ob = makePair(i, testcase[i], j, testcase[j]) 
-	    if ob in Outstanding: 
-		Outstanding.remove(ob)
-		testCaseValue = testCaseValue + 1
-    if DBGp: print "*** Value ", testCaseValue, testcase 
+        for j in range ( i+1, len(testcase) ): 
+            ob = makePair(i, testcase[i], j, testcase[j]) 
+            if ob in Outstanding: 
+                Outstanding.remove(ob)
+                testCaseValue = testCaseValue + 1
+    dbg("*** Value ", testCaseValue, testcase )
 
 
 # ---------------------------------------------------------
@@ -427,12 +442,12 @@ def clearObligations(testcase) :
 def compatible( item, testcase ) : 
     slot, val = item 
     if ( testcase[ slot ] != DontCare and testcase[slot] != val) : 
-	return False
+        return False
     for tslot in range(len(testcase)) : 
-	if ((slot, val), (tslot, testcase[tslot])) in Excludes: 
-	    return False
-	if ((tslot, testcase[tslot]),(slot,val)) in Excludes: 
-	    return False
+        if ((slot, val), (tslot, testcase[tslot])) in Excludes: 
+            return False
+        if ((tslot, testcase[tslot]),(slot,val)) in Excludes: 
+            return False
     return True
 
 # ---------------------------------------------------------
@@ -447,51 +462,52 @@ def MakeTuple ( len ):
 def CreateCase(): 
     seedObligation = ObsList.pop() 
     while seedObligation not in Outstanding: 
-	if (len(ObsList) == 0): return
-	seedObligation = ObsList.pop() 
+        if (len(ObsList) == 0): return
+        seedObligation = ObsList.pop() 
     s1, v1 = seedObligation[0]
     s2, v2 = seedObligation[1]
     testcase = MakeTuple( len(CategoriesList) ) 
     testcase[s1] = v1
     testcase[s2] = v2
     for slot in SingleColumns : 
-	testcase[slot] = CategoriesValues[slot][0]
-    if DBG: print "#DBG === Attempting tuple seeded with", testcase
-    columnOrder = range( len(CategoriesList) ) 
+        testcase[slot] = CategoriesValues[slot][0]
+    dbg("#DBG === Attempting tuple seeded with", testcase)
+    columnOrder = list(range( len(CategoriesList) ) )
     random.shuffle(columnOrder)
     if ( completeCase( columnOrder, testcase ) ) : 
-	Suite.append( testcase )
-	clearObligations( testcase )
+        Suite.append( testcase )
+        clearObligations( testcase )
     else: 
-	CaseMessage( "Warning - No pair possible: ", testcase ) 
+        CaseMessage( "Warning - No pair possible: ", testcase ) 
 	
 def CreateSingles(): 
     for single in Singles: 
-	CreateSingle(single)
+        CreateSingle(single)
 
 def CreateSingle( single ): 
     testcase = MakeTuple( len(CategoriesList) ) 
-    columnOrder = range( len(CategoriesList) ) 
+    columnOrder = list(range( len(CategoriesList) ) )
     random.shuffle(columnOrder)
     value, slot,  kind = single
-    if DBG: print "#DBG single obligation: ",  slot, value, kind
+    dbg("#DBG single obligation: ",  slot, value, kind)
     testcase[slot] = value
-    if ( completeCase( columnOrder, testcase ) ) : 
-	Suite.append( testcase )
+    if completeCase( columnOrder, testcase ) : 
+        Suite.append( testcase )
     else: 
-	CaseMessage( "Warning - No pair possible: ", testcase )
+        CaseMessage( "Warning - No pair possible: ", testcase )
 
 
 def completeCase( columnOrder, testcase ) : 
     if len (columnOrder) == 0 : 
-        if DBGp: print "#DBG: *** Success: ", testcase
-	return True
-    if DBGp: print "#DBG * Attempting to complete", testcase 
+        dbg_p("#DBG: *** Success: ", testcase)
+        return True
+    dbg_p("#DBG * Attempting to complete", testcase )
     col = columnOrder[0]
     if testcase[col] != DontCare: 
-	if DBGp: print "#DBG *  Skipping column ", col, " (already filled in)"
-	return completeCase( columnOrder[1:], testcase )
-    if DBG: print "#DBG ***Trying columns ", columnOrder, " in ",  testcase
+        dbg_p("#DBG *  Skipping column ", col, " (already filled in)")
+        return completeCase( columnOrder[1:], testcase )
+    dbg("#DBG ***Trying columns ", columnOrder, " in ",  testcase)
+
     # How shall we fill this DontCare with something useful? 
     # Let's try for an outstanding obligation.
     # Dec 2006 --- Let's look at all the outstanding obligations
@@ -502,16 +518,16 @@ def completeCase( columnOrder, testcase ) :
     candidates = [ ] 
     obindex = 0
     while obindex < len(colObs) and len(candidates) < maxCandidates : 
-	ob = colObs[obindex]
+        ob = colObs[obindex]
         if not (ob in Outstanding or reversePair(ob) in Outstanding): 
-	    # Here is our lazy deletion of obligations; we 
-	    # clip from the end of the list
-	    if DBGp:  print "#DBG * Lazy deletion"
-	    colObs[obindex] = colObs[ len(colObs) - 1 ]
-	    colObs.pop()
+            # Here is our lazy deletion of obligations; we 
+            # clip from the end of the list
+            dbg_p("#DBG * Lazy deletion")
+            colObs[obindex] = colObs[ len(colObs) - 1 ]
+            colObs.pop()
         else: 
-	    if compatible(ob[0], testcase) and compatible(ob[1], testcase): 
-		if DBGp: print "#DBG *** Compatible", ob, testcase 
+            if compatible(ob[0], testcase) and compatible(ob[1], testcase): 
+                dbg_p("#DBG *** Compatible", ob, testcase )
                 # Score the 
                 # Note one (but not both) of these may coincide with 
                 # an existing element.  We'll only consider *added* value, 
@@ -534,7 +550,7 @@ def completeCase( columnOrder, testcase ) :
             obindex = obindex + 1
     candidates.sort() 
     candidates.reverse() 
-    if DBGp: print "### Candidates: ", candidates 
+    dbg_p("### Candidates: ", candidates)
     for cand in candidates: 
         (score, ((s1, v1),(s2,v2))) = cand
         old_v1 = testcase[ s1 ]
@@ -544,21 +560,21 @@ def completeCase( columnOrder, testcase ) :
         if completeCase( columnOrder[1:] , testcase ): 
             return True
         else: 
-            if DBGp: print "#DBG *** Rolling back ", s1, s2
+            dbg_p("#DBG *** Rolling back ", s1, s2)
             # Restore previous values
             testcase[ s1 ] = old_v1
             testcase[ s2 ] = old_v2
     ## If we couldn't score any more obligations, can we at least
     ## fill in some compatible value and move on? 
-    if DBGp: print "#DBG *** Trying any value, regardless of obligation"
+    dbg_p("#DBG *** Trying any value, regardless of obligation")
     for val in CategoriesValues[ col ] : 
-	if compatible((col,val), testcase) :
-	    testcase[ col ] = val
-	    if completeCase( columnOrder[1:], testcase ): 
-		return True
-	    else: 
-		testcase[ col ] = DontCare
-    if DBGp: print "#DBG ** Failing to fill column ", col , " with ", testcase
+        if compatible((col,val), testcase) :
+            testcase[ col ] = val
+            if completeCase( columnOrder[1:], testcase ): 
+                return True
+            else: 
+                testcase[ col ] = DontCare
+    dbg_p("#DBG ** Failing to fill column ", col , " with ", testcase)
     return False
 	    
 # ------------------------------------------------------------
@@ -569,16 +585,16 @@ def CaseMessage( message, vector ) :
     """Print a warning or error message concerning a 
     particular partially-defined test vector"""
     if UserOptions.output_format == "csv" : 
-	print "\"%s\"" % message , 
-	for col in range(len(vector)) : 
-	    print ",\"%s\"" % vector[col] , 
-	print ""
+        print_("\"%s\"" % message , end="")
+        for col in range(len(vector)) : 
+            print_( ",\"%s\"" % vector[col] , end="")
+        print_("")
     else: 
-	print message, "[", 
-	for col in range(len(vector)) : 
-	    if vector[col] != DontCare : 
-		print "%s=" % CategoriesList[col] + vector[col], 
-	print "]"
+        print_( message, "[", end="")
+        for col in range(len(vector)) : 
+            if vector[col] != DontCare : 
+                print_("%s=" % CategoriesList[col] + vector[col], end="")
+        print_("]")
 
 def ObToVector( ob ) : 
     """Convert obligation to vector for debugging messages"""
@@ -595,36 +611,36 @@ def ObToVector( ob ) :
 # ------------------------------------------------------------
 def PrintTable( columns, descriptive_title ) : 
     if UserOptions.output_format == "csv" : 
-	PrintAsCSV( columns )
+        PrintAsCSV( columns )
     else: 
-	PrintAsText( columns, descriptive_title )
+        PrintAsText( columns, descriptive_title )
 
 def PrintAsText( columns, descriptive_title ): 
-    print descriptive_title + ":", len(Suite), " test vectors"
-    print ""
+    print_(descriptive_title + ":", len(Suite), " test vectors")
+    print_("")
     for slot in columns : 
-	parm = CategoriesList[ slot ]
-	print "%15s" % parm  ,
-    print ""
-    print "_"*60
+        parm = CategoriesList[ slot ]
+        print_("%15s" % parm  , end="")
+    print_("")
+    print_("_"*60)
     for t in Suite : 
-	for slot in columns : 
-	    value =  t[slot]
-	    print "%15s" % value , 
-	print ""
-    print ""
+        for slot in columns : 
+            value =  t[slot]
+            print_("%15s" % value , end="")
+        print_( "" )
+    print_( "" )
 
 def PrintAsCSV(columns): 
     """ Print vectors as comma-separated values, for import 
         into a spreadsheet or other CSV-consuming application. """
-    if DBG:     print "Print as CSV"
+    dbg("Print as CSV")
     csv_writer = csv.writer( sys.stdout, dialect=csv.excel ) 
     schema_row = [ ] 
     for slot in columns : 
         schema_row.append( CategoriesList[slot] )
     csv_writer.writerow(schema_row)
     for t in Suite : 
-        if DBG: print "write row " , t 
+        dbg("write row " , t )
         csv_writer.writerow( t ) 
 
 # ----------------
@@ -663,8 +679,8 @@ def initial_suite_clear( initial_suite ) :
             to_col = CategoriesList.index(col)
             in_schema_map.append(to_col)
         else: 
-            print "Warning: schema mismatch in", initial_suite
-            print "  Column ", i, "'" +  col + "'", "not in specification"
+            print_("Warning: schema mismatch in", initial_suite)
+            print_("  Column ", i, "'" +  col + "'", "not in specification")
             in_schema_map.append(-1)
 
     for vec in reader: 
@@ -675,12 +691,10 @@ def initial_suite_clear( initial_suite ) :
                     trvec[in_schema_map[i]] = vec[i]
             clearObligations( trvec ) 
         else: 
-            print "*** Warning, format mismatch with initial suite ", 
-            print initial_suite 
-            print "*** Expecting columns ", 
-            print  in_schema , 
-            print " but saw ", 
-            print  vec
+            print_("*** Warning, format mismatch with initial suite ", 
+                initial_suite)
+            print_("*** Expecting columns ", 
+                in_schema , " but saw ",  vec)
 
 # ----------------
 
@@ -693,7 +707,7 @@ def print_required_pairs( ) :
         name1=CategoriesList[s1]
         s2, v2 = ob[1]
         name2=CategoriesList[s2]
-        print "%s=%s, %s=%s" % (name1, v1, name2, v2)
+        print_("%s=%s, %s=%s" % (name1, v1, name2, v2))
 
 
 ## ------------------------------------------------------------
@@ -704,20 +718,20 @@ def print_required_pairs( ) :
 # -- Respond to special diagnostic options -- 
 
 if UserOptions.license: 
-    print License
+    print_(License)
     exit(0)
 
 if UserOptions.debug: 
-    print "---------------------------"
-    print "Options in effect: "
-    print "debug: ", UserOptions.debug
-    print "output_format:", UserOptions.output_format
-    print "varying:", UserOptions.varying
-    print "combinations:", UserOptions.combinations
-    print "singles:", UserOptions.singles
-    print "initial_suite:", UserOptions.initial_suite
-    print "pairs:", UserOptions.pairs
-    print "---------------------------"
+    print_("---------------------------")
+    print_("Options in effect: ")
+    print_("debug: ", UserOptions.debug)
+    print_("output_format:", UserOptions.output_format)
+    print_("varying:", UserOptions.varying)
+    print_("combinations:", UserOptions.combinations)
+    print_("singles:", UserOptions.singles)
+    print_("initial_suite:", UserOptions.initial_suite)
+    print_("pairs:", UserOptions.pairs)
+    print_("---------------------------")
 
 
 # -- Main processing: Parse the script, execute, print -- 
@@ -732,17 +746,17 @@ for suite in UserOptions.initial_suite :
 
 
 if UserOptions.pairs : 
-    print "=== Pairs required for completion ===" 
+    print_("=== Pairs required for completion ===" )
     print_required_pairs() 
-    print "====================================="
+    print_("=====================================")
 
 if UserOptions.combinations : 
     while len(ObsList) > 0 : 
-	CreateCase()
+        CreateCase()
     if UserOptions.varying : 
-	PrintTable( MultipleColumns, "Pairwise coverage, varying columns only" )
+        PrintTable( MultipleColumns, "Pairwise coverage, varying columns only" )
     else: 
-	PrintTable( range(len(CategoriesList)), "Pairwise coverage" ) 
+        PrintTable( range(len(CategoriesList)), "Pairwise coverage" ) 
 
 if UserOptions.singles : 
     Suite = [ ] 
