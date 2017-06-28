@@ -96,58 +96,80 @@ maxCandidates = 50 ## Bigger = better solutions, smaller = faster
 import six # Python 2 and 3 compatibility
 from six import print_    
 
+## Logging
+#
+import logging
+logging.basicConfig(format='%(levelname)s:%(message)s',
+                        level=logging.WARNING)
+Log = logging.getLogger(__name__)
+Log.warning("This should appear as a warning")
+
 # Debug messages
 def dbg(*msg):
-    if DBG:
-        print_(*msg)  ## Python 2 and 3 compatible print
+    parts = [ str(x) for x in msg ]
+    msg_string = " ".join(parts)
+    Log.debug(msg_string)
+    #    if DBG:
+    #        print_(*msg)  ## Python 2 and 3 compatible print
 
 # Performance debug messages
 def dbg_p(*msg): 
     if DBGp: 
-        print_(*msg)  ## Python 2 and 3 compatible print
+        dbg(*msg)
 # ------------------------------------    
 
 ## User arguments
 from optparse import OptionParser 
 optparser = OptionParser(usage=usage)
 optparser.set_defaults(output_format="plain")
-optparser.add_option("-d", "--debug", 
+
+optparser.add_option("-d", "--debug",
 		  help="Print a lot of debugging messages",
 		  action="store_true", default=False, dest="debug")
-optparser.add_option("-l", "--license", 
+
+optparser.add_option("-l", "--license",
 		     help="Print license terms (and then quit)", 
 		     action="store_true",default=False, dest="license")
-optparser.add_option("--csv", "-c",  "--comma-separated-values", 
+
+optparser.add_option("--csv", "-c",  "--comma-separated-values",
 		  action="store_const", dest="output_format", 
 		  const = "csv", 
                   help = """Output format is comma-separated-values
                          (suitable as input to Excel and other spreadsheets, 
                          genpairs with the -i option, and some other 
                          programs).""")
-               
+
 optparser.add_option("-v", "--varying", "--varying-columns-only", 
 		     action="store_true", default=False, dest="varying",
                      help="""Include only categories with more than one 
                              non-error and non-single value""")
-optparser.add_option("-s", "--singles", "--singles-only", 
+
+optparser.add_option("-s", "--singles", "--singles-only",
 		     action="store_false", default=True, dest="combinations",
                      help="""Print only test cases covering 'error' 
                              and 'single' values.""") 
-optparser.add_option("-o", "--omit-singles", 
+
+optparser.add_option("-o", "--omit-singles",
 		     action="store_false", default=True, dest="singles",
                      help = """Do not produce test cases covering 'single'
                                or 'error' values.""")
-optparser.add_option("-i", "--initial", "--initial-suite", 
+
+optparser.add_option("-i", "--initial", "--initial-suite",
                      action="append", default = [], dest="initial_suite",
                      help="""Read initial test suite (in csv format).  Often 
                              used together with -p""")
-optparser.add_option("-p", "--pairs", "--print-pairs", 
+
+optparser.add_option("-p", "--pairs", "--print-pairs",
                      action="store_true", default=False, dest="pairs",
                      help="""Report pairs not covered by initial test suites.
                              (Useful only with --initial)""")
 
 (UserOptions, UserArgs) = optparser.parse_args()
-if UserOptions.debug : DBG=True
+print_("User options: ",  UserOptions)
+if UserOptions.debug :
+    print_("Enabling debugging")
+    DBG=True
+    Log.setLevel(logging.DEBUG)
 
 
 ## Primary data structures
