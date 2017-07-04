@@ -597,23 +597,22 @@ def completeCase( columnOrder, testcase ) :
     return False
 	    
 # ------------------------------------------------------------
-# Print Warnings
+# Print Warnings (to stderr unless otherwise specified)
 # ------------------------------------------------------------
 
-def CaseMessage( message, vector ) : 
+def CaseMessage( msg, vector, dest=sys.stderr ) : 
     """Print a warning or error message concerning a 
     particular partially-defined test vector"""
-    if UserOptions.output_format == "csv" : 
-        print_("\"%s\"" % message , end="")
-        for col in range(len(vector)) : 
-            print_( ",\"%s\"" % vector[col] , end="")
-        print_("")
-    else: 
-        print_( message, "[", end="")
-        for col in range(len(vector)) : 
-            if vector[col] != DontCare : 
-                print_("%s=" % CategoriesList[col] + vector[col], end=", ")
-        print_("]")
+    print_( "{} [".format(msg), end="", file=dest)
+    sep=""
+    for col in range(len(vector)) : 
+            if vector[col] == DontCare :
+                print_(sep+"_",end="", file=dest)
+            else: 
+                print_("{}{}={}".format(sep,CategoriesList[col],vector[col]),
+                           end="", file=dest)
+            sep=", "
+    print_("]",file=dest)
 
 def ObToVector( ob ) : 
     """Convert obligation to vector for debugging messages"""
