@@ -102,15 +102,12 @@ import logging
 logging.basicConfig(format='%(levelname)s:%(message)s',
                         level=logging.WARNING)
 Log = logging.getLogger(__name__)
-Log.warning("This should appear as a warning")
 
 # Debug messages
 def dbg(*msg):
     parts = [ str(x) for x in msg ]
     msg_string = " ".join(parts)
     Log.debug(msg_string)
-    #    if DBG:
-    #        print_(*msg)  ## Python 2 and 3 compatible print
 
 # Performance debug messages
 def dbg_p(*msg): 
@@ -165,7 +162,7 @@ optparser.add_option("-p", "--pairs", "--print-pairs",
                              (Useful only with --initial)""")
 
 (UserOptions, UserArgs) = optparser.parse_args()
-print_("User options: ",  UserOptions)
+Log.info("User options: ",  UserOptions)
 if UserOptions.debug :
     print_("Enabling debugging")
     DBG=True
@@ -615,7 +612,7 @@ def CaseMessage( message, vector ) :
         print_( message, "[", end="")
         for col in range(len(vector)) : 
             if vector[col] != DontCare : 
-                print_("%s=" % CategoriesList[col] + vector[col], end="")
+                print_("%s=" % CategoriesList[col] + vector[col], end=", ")
         print_("]")
 
 def ObToVector( ob ) : 
